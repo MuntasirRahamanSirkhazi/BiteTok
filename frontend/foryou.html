@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>For You - BiteTok</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- Navbar -->
+  <header class="bg-white shadow fixed top-0 w-full z-10">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800">BiteTok</h1>
+      <div>
+        <a href="upload.html" class="text-gray-800 hover:text-blue-500 px-4">Upload</a>
+        <a href="cart.html" class="text-gray-800 hover:text-blue-500 px-4">Cart</a>
+        <a href="index.html" class="text-gray-800 hover:text-red-500 px-4">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Reels List -->
+  <div class="container mx-auto py-16 mt-16" id="reels-container">
+    <!-- Reels will be dynamically inserted here -->
+  </div>
+
+  <script>
+    async function addToCart(dish_name, price, reel_id) {
+      try {
+        const response = await fetch('/bitetok/api/cart/add.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `dish_name=${encodeURIComponent(dish_name)}&price=${encodeURIComponent(price)}&reel_id=${encodeURIComponent(reel_id)}`
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          window.location.href = 'cart.html';
+        } else {
+          alert('sucessfully added to cart');
+        }
+      } catch (error) {
+        alert('Failed to add to cart. Please try again.');
+        console.error(error);
+      }
+    }
+   
+
+    async function loadReels() {
+      try {
+        const response = await fetch('/bitetok/api/user/reels.php');
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          const container = document.getElementById('reels-container');
+          container.innerHTML = '';
+
+          result.data.forEach(reel => {
+            const div = document.createElement('div');
+            div.className = 'bg-white shadow-lg rounded-lg p-6 mb-6 max-w-xl mx-auto';
+
+            const mediaHtml = reel.media_type === 'video'
+              ? `<video controls class="w-full mb-4 rounded-lg"><source src="/bitetok/uploads/${reel.media_url}" type="video/mp4">Your browser does not support video.</video>`
+              : `<img src="/bitetok/uploads/${reel.media_url}" alt="${reel.dish_name}" class="w-full mb-4 rounded-lg" />`;
+
+            div.innerHTML = `
+              ${mediaHtml}
+              <h2 class="text-xl font-bold mb-1">${reel.dish_name}</h2>
+              <p class="text-gray-700 mb-2">${reel.description}</p>
+              <p class="text-gray-800 font-semibold mb-1">Price: $${reel.price}</p>
+              <p class="text-gray-600 mb-1">Location: ${reel.location}</p>
+              <p class="text-gray-500 text-sm mb-3">Uploaded at: ${reel.created_at}</p>
+              <button
+                class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                onclick="addToCart('${reel.dish_name}', '${reel.price}', '${reel.id}')">
+                Add to Cart
+              </button>
+            `;
+
+            container.appendChild(div);
+          });
+        } else {
+          document.getElementById('reels-container').innerHTML = `<p class="text-center text-red-500">successfully added to cart</p>`;
+        }
+      } catch (error) {
+        console.error("Load Reels Error:", error);
+        document.getElementById('reels-container').innerHTML = `<p class="text-center text-red-500">Failed to load reels. Try again later.</p>`;
+      }
+    }
+
+    // Load reels on page load
+    loadReels();
+  </script>
+</body>
+</html>

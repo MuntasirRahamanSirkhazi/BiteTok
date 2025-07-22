@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cart - BiteTok</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- ✅ Navbar -->
+  <header class="bg-white shadow fixed top-0 w-full z-10">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800">BiteTok</h1>
+      <div>
+        <a href="foryou.html" class="text-gray-800 hover:text-blue-500 px-4">For You</a>
+        <a href="upload.html" class="text-gray-800 hover:text-blue-500 px-4">Upload</a>
+        <a href="cart.html" class="text-gray-800 hover:text-blue-500 px-4">Cart</a>
+        <a href="index.html" class="text-gray-800 hover:text-red-500 px-4">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ✅ Cart Content -->
+  <div class="container mx-auto py-16 mt-16">
+    <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Your Cart</h2>
+
+    <div id="cart-container" class="space-y-4">
+      <!-- Cart items will be inserted here -->
+    </div>
+
+    <!-- Total -->
+    <div class="text-right mt-6 text-xl font-semibold text-gray-800">
+      Total: $<span id="cart-total">0.00</span>
+    </div>
+
+    <!-- Payment Option -->
+    <button
+    onclick="handlePayment()"
+    class="bg-green-500 text-white px-4 py-2 mt-4 rounded hover:bg-green-600 w-full">
+    Pay Now
+  </button>
+
+  <!-- 🔁 JS Logic -->
+  <script>
+    async function removeFromCart(itemId) {
+      try {
+        const response = await fetch('/bitetok/api/cart/remove.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `item_id=${encodeURIComponent(itemId)}`
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+          loadCart();
+        } else {
+          alert(result.message || 'Failed to remove item.');
+        }
+      } catch (err) {
+        console.error('Remove Error:', err);
+        alert('Error removing item.');
+      }
+    }
+
+    async function loadCart() {
+      try {
+        const response = await fetch('/bitetok/api/cart/view.php');
+        const result = await response.json();
+
+        const container = document.getElementById('cart-container');
+        const totalSpan = document.getElementById('cart-total');
+        container.innerHTML = '';
+
+        if (result.status === 'success') {
+          let total = 0;
+          result.data.forEach(item => {
+            total += parseFloat(item.price);
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'bg-white shadow p-4 rounded-lg flex justify-between items-center';
+
+            itemDiv.innerHTML = `
+              <div>
+                <h3 class="text-xl font-bold">${item.dish_name}</h3>
+                <p class="text-gray-700">Price: $${item.price}</p>
+                <p class="text-sm text-gray-500">Reel ID: ${item.reel_id}</p>
+              </div>
+              <button
+                onclick="removeFromCart(${item.id})"
+                class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                Remove
+              </button>
+            `;
+            container.appendChild(itemDiv);
+          });
+
+          totalSpan.textContent = total.toFixed(2);
+        } else {
+          container.innerHTML = `<p class="text-center text-red-500">${result.message}</p>`;
+          totalSpan.textContent = '0.00';
+        }
+      } catch (err) {
+        console.error("Load Cart Error:", err);
+        document.getElementById('cart-container').innerHTML =
+          `<p class="text-center text-red-500">Failed to load your cart.</p>`;
+      }
+    }
+
+    loadCart();
+    function handlePayment() {
+    // Save cart items to simulate order
+    const items = JSON.parse(localStorage.getItem('cartItems') || '[]');
+    localStorage.setItem('lastOrder', JSON.stringify(items));
+
+    // Clear cart
+    localStorage.removeItem('cartItems');
+
+    // Redirect to receipt page
+    window.location.href = 'receipt.html';
+  }
+  </script>
+</body>
+</html>
